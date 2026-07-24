@@ -1,4 +1,6 @@
 .env
+deployments/*.env
+!deployments/template.env
 *.pyc
 __pycache__/
 .venv/

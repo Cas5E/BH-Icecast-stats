@@ -1,44 +1,54 @@
 # BH-Icecast
 
-Modulaire Icecast-stack met HTTP-API voor mountpoints. Elk mountpoint heeft een **eigen source-wachtwoord**. Mounts aanmaken/wijzigen vereist **geen Icecast-reload** — bestaande listeners blijven verbonden.
+Modulaire Icecast-stack met HTTP-API voor mountpoints. Elk mountpoint heeft een **eigen source-wachtwoord**. Mounts aanmaken/wijzigen vereist **geen Icecast-reload**.
+
+Zelfde stack op **meerdere servers** met elk een eigen domein: zie [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Hoe het werkt (zonder disconnects)
 
 Icecast kent alleen een intern master source-wachtwoord en maakt mounts dynamisch aan zodra een source connect.
 
-Broadcasters verbinden naar poort **8000** met hun mount-specifieke wachtwoord. Nginx:
+Nginx:
 
-1. checkt het wachtwoord via de API (`auth_request`)
+1. checkt het source-wachtwoord via de API (`auth_request`)
 2. vervangt de credentials door het Icecast-masterwachtwoord
 3. proxyt de stream naar Icecast
 
-Listeners (GET) gaan rechtstreeks door zonder source-auth.
-
 ```
-OBS / butt  --SOURCE/PUT + mount-password-->  :8000 nginx  -->  Icecast
-Listeners   --GET /mount ------------------>  :8000 nginx  -->  Icecast
-Beheer      --HTTP Bearer token ----------->  :8080 API
+Encoder  --SOURCE/PUT-->  :80 of :443 nginx  -->  Icecast
+Listeners --GET ------->  :443 nginx         -->  Icecast
+Beheer    --API -------->  IP-allowlist / SSH-tunnel
 ```
 
-## Snel starten (Docker)
-
-Op een Linux-host met Docker:
+## Multi-server (aanbevolen)
 
 ```bash
-cp .env.example .env
-# of: bash scripts/generate-secrets.sh
-# vul BH_DOMAIN + secrets in .env
+# 1) Nieuwe instance (eigen secrets + domain)
+bash scripts/new-instance.sh \
+  --domain stream.klant.nl \
+  --email admin@klant.nl \
+  --ssh-host 203.0.113.10 \
+  --allow-ip 198.51.100.20
 
+# 2) DNS A-record naar de server zetten
+
+# 3) Deploy
+bash scripts/deploy-instance.sh --env deployments/stream.klant.nl.env
+```
+
+Details: [docs/DEPLOY.md](docs/DEPLOY.md) · API: [docs/API.md](docs/API.md)
+
+## Snel starten (één server, handmatig)
+
+```bash
+cp .env.example .env   # BH_DOMAIN + secrets invullen
+# of: bash scripts/generate-secrets.sh
 docker compose up -d --build
 bash scripts/init-ssl.sh
 ```
 
 - Streams: `https://<domain>/<mount>`
-- API: `https://<domain>/api/v1/...`
-- Docs: `https://<domain>/docs`
-- Health: `https://<domain>/health`
-
-Poorten **80** (ACME + redirect) en **443** (HTTPS). Geen aparte 8000/8080 naar buiten.
+- API/docs: alleen vanaf `BH_API_ALLOW_IPS` of `ssh -L 8080:127.0.0.1:8080 ...` → `http://127.0.0.1:8080`
 
 ## Bare-metal (Debian/Ubuntu)
 
