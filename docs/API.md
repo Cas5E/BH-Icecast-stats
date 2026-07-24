@@ -207,13 +207,12 @@ curl -X DELETE https://icecast.ebbersbroadcast.technology/api/v1/mounts/studio-1
 | Field | Use in OBS / butt / … |
 |-------|------------------------|
 | `source_url` | Server hostname |
-| `source_port_http` | `80` (recommended for ingest) |
-| `source_port_https` | `443` (SSL ingest; HTTP/1.1) |
+| `source_port_http` | **`8000`** (Icecast direct — required) |
 | `source_mount` | Mount, e.g. `/studio-1` |
 | `password` | Source password |
 | Username | `source` (or empty, depending on encoder) |
 
-Listeners: open `listen_url` (HTTPS). No listener password.
+Listeners: open `listen_url` on **HTTPS :443**. Encoding on 80/443 is blocked on purpose (unstable through nginx).
 
 ---
 

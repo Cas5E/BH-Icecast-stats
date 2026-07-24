@@ -12,27 +12,22 @@ http {
     sendfile      on;
     tcp_nopush    on;
     tcp_nodelay   on;
-    keepalive_timeout 65;
     server_tokens off;
 
-    # Icecast SOURCE/PUT clients break on HTTP/2 — keep HTTP/1.1 only
+    keepalive_timeout 7d;
+    client_header_timeout 7d;
+    client_body_timeout 7d;
+    send_timeout 7d;
+    client_max_body_size 0;
+
     proxy_http_version 1.1;
     proxy_buffering off;
     proxy_request_buffering off;
+    proxy_max_temp_file_size 0;
+    proxy_connect_timeout 60s;
     proxy_read_timeout 7d;
     proxy_send_timeout 7d;
-    client_max_body_size 0;
-
-    map $http_upgrade $connection_upgrade {
-        default upgrade;
-        ''      "";
-    }
-
-    map $request_method $bh_upstream_authorization {
-        default "Basic ${ICECAST_SOURCE_AUTH_BASIC}";
-        GET     "";
-        HEAD    "";
-    }
+    proxy_socket_keepalive on;
 
     map $request_method $bh_force_https {
         default 0;
@@ -42,14 +37,13 @@ http {
 
     upstream icecast {
         server icecast:8000;
-        keepalive 32;
     }
 
     upstream api {
         server api:8080;
+        keepalive 8;
     }
 
-    # --- Public HTTP :80 (ACME + source ingest + redirect listeners) ---
     server {
         listen 80;
         listen [::]:80;
@@ -59,22 +53,7 @@ http {
             root /var/www/certbot;
         }
 
-        location = /_bh_source_auth {
-            internal;
-            proxy_pass http://api/internal/source-auth;
-            proxy_pass_request_body off;
-            proxy_set_header Content-Length "";
-            proxy_set_header Authorization $http_authorization;
-            proxy_set_header X-Original-URI $request_uri;
-            proxy_set_header X-Original-Method $request_method;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-
-        location ^~ /admin {
-            return 403;
-        }
-
-        # Management API is never on :80
+        location ^~ /admin { return 403; }
         location ^~ /api/ { return 404; }
         location ^~ /docs { return 404; }
         location ^~ /redoc { return 404; }
@@ -82,21 +61,16 @@ http {
         location = /health { return 404; }
 
         location / {
+            # Listeners -> HTTPS
             if ($bh_force_https = 1) {
                 return 301 https://$host$request_uri;
             }
-            auth_request /_bh_source_auth;
-            proxy_set_header Authorization $bh_upstream_authorization;
-            proxy_pass http://icecast;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_set_header Connection "";
+            # Encoders must use Icecast :8000 (nginx SOURCE proxy is unstable)
+            default_type text/plain;
+            return 403 "Encode to port 8000 (Icecast), not port 80.\n";
         }
     }
 
-    # --- Public HTTPS :443 (streams public, API IP-restricted) ---
     server {
         listen 443 ssl;
         listen [::]:443 ssl;
@@ -109,9 +83,10 @@ http {
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_prefer_server_ciphers off;
 
-        # Private management — only BH_API_ALLOW_IPS (+ localhost)
         location ^~ /api/ {
             include /etc/nginx/bh_api_allow.conf;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             proxy_pass http://api;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -145,44 +120,31 @@ http {
             proxy_set_header Host $host;
         }
 
-        location ^~ /internal/ {
-            return 404;
-        }
+        location ^~ /internal/ { return 404; }
+        location ^~ /admin { return 403; }
 
-        location ^~ /admin {
-            return 403;
-        }
-
-        location = /_bh_source_auth {
-            internal;
-            proxy_pass http://api/internal/source-auth;
-            proxy_pass_request_body off;
-            proxy_set_header Content-Length "";
-            proxy_set_header Authorization $http_authorization;
-            proxy_set_header X-Original-URI $request_uri;
-            proxy_set_header X-Original-Method $request_method;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-
-        # Public Icecast streams
+        # Listeners + status only (GET/HEAD)
         location / {
-            auth_request /_bh_source_auth;
-            proxy_set_header Authorization $bh_upstream_authorization;
+            if ($request_method !~ ^(GET|HEAD)$) {
+                return 403 "Encode to port 8000 (Icecast), not 443.\n";
+            }
+            proxy_set_header Connection "close";
             proxy_pass http://icecast;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto https;
-            proxy_set_header Connection "";
+            proxy_ignore_client_abort off;
         }
     }
 
-    # --- Local-only management (SSH tunnel: ssh -L 8080:127.0.0.1:8080 root@server) ---
     server {
         listen 127.0.0.1:8080;
         server_name _;
 
         location / {
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             proxy_pass http://api;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;

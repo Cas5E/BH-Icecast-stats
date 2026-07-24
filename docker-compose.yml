@@ -8,8 +8,16 @@ services:
       ICECAST_ADMIN_USER: ${ICECAST_ADMIN_USER:-admin}
       ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD}
       ICECAST_HOSTNAME: ${BH_DOMAIN:-localhost}
-    expose:
-      - "8000"
+      BH_ICECAST_SHARED: /shared
+    volumes:
+      - icecast-shared:/shared
+    ports:
+      # Encoders connect here directly (stable). Do NOT use nginx for SOURCE.
+      - "8000:8000"
+    sysctls:
+      net.ipv4.tcp_keepalive_time: 60
+      net.ipv4.tcp_keepalive_intvl: 30
+      net.ipv4.tcp_keepalive_probes: 5
     networks:
       - bh
 
@@ -21,11 +29,13 @@ services:
       BH_DATABASE_URL: sqlite:////data/bh-icecast.db
       BH_DATA_DIR: /data
       BH_PUBLIC_LISTEN_BASE: ${BH_PUBLIC_LISTEN_BASE:-https://${BH_DOMAIN}}
+      BH_ICECAST_SHARED: /shared
       ICECAST_ADMIN_URL: http://icecast:8000
       ICECAST_ADMIN_USER: ${ICECAST_ADMIN_USER:-admin}
       ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD}
     volumes:
       - api-data:/data
+      - icecast-shared:/shared
     expose:
       - "8080"
     networks:
@@ -49,7 +59,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      # Management API only on localhost (use SSH tunnel from your PC)
       - "127.0.0.1:8080:8080"
     volumes:
       - certbot-www:/var/www/certbot:ro
@@ -67,6 +76,7 @@ services:
 
 volumes:
   api-data:
+  icecast-shared:
   certbot-www:
   certbot-certs:
 

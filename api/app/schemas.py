@@ -70,8 +70,8 @@ class MountOut(BaseModel):
     listen_url: str = Field(description="Public HTTPS URL for listeners")
     source_url: str = Field(description="Base URL encoders should use (host)")
     source_mount: str = Field(description="Mount path for the encoder, e.g. /live")
-    source_port_http: int = Field(default=80, description="HTTP ingest port")
-    source_port_https: int = Field(default=443, description="HTTPS ingest port")
+    source_port_http: int = Field(default=8000, description="Encoder port (Icecast direct)")
+    source_port_https: int = Field(default=8000, description="Same as HTTP — encode on 8000, listen on 443")
     created_at: str
     updated_at: str
 

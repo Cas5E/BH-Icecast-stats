@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.db import init_db
+from app.db import SessionLocal, init_db
+from app.icecast_sync import sync_mounts_to_icecast
 from app.routes_internal import router as internal_router
 from app.routes_mounts import router as mounts_router
 from app.schemas import HealthOut
@@ -17,6 +18,11 @@ Path(settings.data_dir).mkdir(parents=True, exist_ok=True)
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
+    db = SessionLocal()
+    try:
+        sync_mounts_to_icecast(db)
+    finally:
+        db.close()
     yield
 
 

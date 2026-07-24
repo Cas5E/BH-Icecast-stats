@@ -11,10 +11,11 @@
     <limits>
         <clients>1000</clients>
         <sources>100</sources>
-        <queue-size>524288</queue-size>
-        <client-timeout>30</client-timeout>
-        <header-timeout>15</header-timeout>
-        <source-timeout>10</source-timeout>
+        <queue-size>2097152</queue-size>
+        <client-timeout>120</client-timeout>
+        <header-timeout>100</header-timeout>
+        <!-- Effectively unlimited for live encoders (seconds without data). -->
+        <source-timeout>86400</source-timeout>
         <burst-on-connect>1</burst-on-connect>
         <burst-size>65535</burst-size>
     </limits>

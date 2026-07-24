@@ -15,6 +15,8 @@ class Mount(Base):
 
     name: Mapped[str] = mapped_column(String(128), primary_key=True)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    # Plaintext needed to provision Icecast <mount><password> (API is IP-restricted).
+    password_plain: Mapped[str | None] = mapped_column(Text, nullable=True)
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
