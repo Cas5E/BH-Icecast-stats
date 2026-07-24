@@ -1,6 +1,6 @@
 # Multi-server deployments
 
-Each Icecast server gets its **own** env file with its own domain, secrets, and allowlist.
+Each Icecast server gets its **own** env file with its own domain and secrets.
 The same Docker stack is reused; only environment variables change.
 
 ## Layout
@@ -20,8 +20,7 @@ deployments/
 bash scripts/new-instance.sh \
   --domain stream.klant.nl \
   --email admin@klant.nl \
-  --ssh-host 203.0.113.10 \
-  --allow-ip 203.0.113.50
+  --ssh-host 203.0.113.10
 ```
 
 Creates `deployments/stream.klant.nl.env` with random secrets.
@@ -65,7 +64,6 @@ bash scripts/deploy-instance.sh --env deployments/stream.klant.nl.env --skip-ssl
 | Domain | `BH_DOMAIN` / `BH_PUBLIC_LISTEN_BASE` |
 | Let’s Encrypt email | `LETSENCRYPT_EMAIL` |
 | API token | `BH_API_TOKEN` (unique per server) |
-| API IP allowlist | `BH_API_ALLOW_IPS` |
 | Icecast master secrets | `ICECAST_*_PASSWORD` (unique per server) |
 
 Mounts/databases are **per server** (Docker volume `api-data`) — not shared across hosts.

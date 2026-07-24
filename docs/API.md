@@ -1,38 +1,26 @@
 # BH-Icecast API Documentation
 
-Base URL (from an allowed IP): `https://icecast.ebbersbroadcast.technology`  
-Local via SSH tunnel: `http://127.0.0.1:8080` after:
+Base URL: `https://icecast.ebbersbroadcast.technology`  
+Local via SSH tunnel (optional): `http://127.0.0.1:8080` after:
 ```bash
 ssh -L 8080:127.0.0.1:8080 root@185.249.252.114
 ```
 
-Interactive docs: `/docs` (same host, **IP-restricted**)  
+Interactive docs: `/docs`  
 OpenAPI JSON: `/openapi.json`
-
-## Access control
-
-The management API (`/api`, `/docs`, `/redoc`, `/openapi.json`, `/health`) is **not public**.
-
-| Access | How |
-|--------|-----|
-| Your PC / office | Add your public IP to `BH_API_ALLOW_IPS` in `.env`, then recreate proxy |
-| Any network | SSH tunnel to `127.0.0.1:8080` on the server |
-| Listeners / encoders | Unaffected — streams stay public on 80/443 |
-
-Multiple IPs: `BH_API_ALLOW_IPS=1.2.3.4,5.6.7.8`
 
 ## Authentication
 
-All `/api/v1/*` endpoints require a Bearer token:
+All `/api/v1/*` endpoints require a Bearer token (`BH_API_TOKEN`):
 
 ```http
 Authorization: Bearer <BH_API_TOKEN>
 Content-Type: application/json
 ```
 
-The token lives in `/opt/bh-icecast/.env` on the server (`BH_API_TOKEN`).
+The token lives in `/opt/bh-icecast/.env` on the server. Without it, API calls return `401`.
 
-`/health` is public (no auth).
+`/health` is public (no auth). Listeners/encoders are unaffected.
 
 ---
 

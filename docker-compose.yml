@@ -55,7 +55,6 @@ services:
     environment:
       ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD}
       BH_DOMAIN: ${BH_DOMAIN}
-      BH_API_ALLOW_IPS: ${BH_API_ALLOW_IPS:-}
     ports:
       - "80:80"
       - "443:443"

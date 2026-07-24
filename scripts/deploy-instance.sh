@@ -129,7 +129,7 @@ fi
 echo
 echo "Deployed ${BH_DOMAIN}"
 echo "  Streams : https://${BH_DOMAIN}/<mount>"
-echo "  API     : https://${BH_DOMAIN}/api/v1/mounts  (IP allowlist / SSH tunnel)"
+echo "  API     : https://${BH_DOMAIN}/api/v1/mounts  (Bearer BH_API_TOKEN)"
 echo "  Docs    : https://${BH_DOMAIN}/docs"
 echo "  Token   : see BH_API_TOKEN in ${ENV_FILE}"
 echo "  Tunnel  : ssh -L 8080:127.0.0.1:8080 ${SSH_USER}@${SSH_HOST}"

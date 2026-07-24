@@ -31,25 +31,6 @@ else
   export SSL_CERTIFICATE_KEY="${SELF_KEY}"
 fi
 
-# IP allowlist for /api /docs (comma/space separated). Always allow loopback.
-ALLOW_FILE=/etc/nginx/bh_api_allow.conf
-{
-  echo "# Generated — do not edit"
-  echo "allow 127.0.0.1;"
-  echo "allow ::1;"
-  if [[ -n "${BH_API_ALLOW_IPS:-}" ]]; then
-    # shellcheck disable=SC2086
-    for ip in $(echo "$BH_API_ALLOW_IPS" | tr ',;' ' '); do
-      ip="$(echo "$ip" | xargs)"
-      [[ -n "$ip" ]] || continue
-      echo "allow ${ip};"
-    done
-  fi
-  echo "deny all;"
-} > "$ALLOW_FILE"
-echo "API allowlist written to ${ALLOW_FILE}:"
-cat "$ALLOW_FILE"
-
 envsubst '${ICECAST_SOURCE_AUTH_BASIC} ${BH_DOMAIN} ${SSL_CERTIFICATE} ${SSL_CERTIFICATE_KEY}' \
   < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 

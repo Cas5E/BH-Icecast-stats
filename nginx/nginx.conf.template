@@ -84,7 +84,6 @@ http {
         ssl_prefer_server_ciphers off;
 
         location ^~ /api/ {
-            include /etc/nginx/bh_api_allow.conf;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_pass http://api;
@@ -95,27 +94,23 @@ http {
         }
 
         location = /health {
-            include /etc/nginx/bh_api_allow.conf;
             proxy_pass http://api/health;
             proxy_set_header Host $host;
         }
 
         location ^~ /docs {
-            include /etc/nginx/bh_api_allow.conf;
             proxy_pass http://api;
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto https;
         }
 
         location ^~ /redoc {
-            include /etc/nginx/bh_api_allow.conf;
             proxy_pass http://api;
             proxy_set_header Host $host;
             proxy_set_header X-Forwarded-Proto https;
         }
 
         location = /openapi.json {
-            include /etc/nginx/bh_api_allow.conf;
             proxy_pass http://api/openapi.json;
             proxy_set_header Host $host;
         }

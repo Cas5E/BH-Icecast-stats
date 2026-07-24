@@ -6,18 +6,13 @@ Zelfde stack op **meerdere servers** met elk een eigen domein: zie [docs/DEPLOY.
 
 ## Hoe het werkt (zonder disconnects)
 
-Icecast kent alleen een intern master source-wachtwoord en maakt mounts dynamisch aan zodra een source connect.
-
-Nginx:
-
-1. checkt het source-wachtwoord via de API (`auth_request`)
-2. vervangt de credentials door het Icecast-masterwachtwoord
-3. proxyt de stream naar Icecast
+Encoders gaan **direct** naar Icecast op poort `8000` (per-mount wachtwoord via API → `mounts.xml` + SIGHUP).  
+Listeners gaan via nginx op `443`. Beheer via `/api` met Bearer-token.
 
 ```
-Encoder  --SOURCE/PUT-->  :80 of :443 nginx  -->  Icecast
-Listeners --GET ------->  :443 nginx         -->  Icecast
-Beheer    --API -------->  IP-allowlist / SSH-tunnel
+Encoder  --SOURCE/PUT-->  :8000 Icecast (direct)
+Listeners --GET ------->  :443 nginx --> Icecast
+Beheer    --API -------->  :443 /api  (Bearer BH_API_TOKEN)
 ```
 
 ## Multi-server (aanbevolen)
@@ -27,8 +22,7 @@ Beheer    --API -------->  IP-allowlist / SSH-tunnel
 bash scripts/new-instance.sh \
   --domain stream.klant.nl \
   --email admin@klant.nl \
-  --ssh-host 203.0.113.10 \
-  --allow-ip 198.51.100.20
+  --ssh-host 203.0.113.10
 
 # 2) DNS A-record naar de server zetten
 
@@ -48,7 +42,7 @@ bash scripts/init-ssl.sh
 ```
 
 - Streams: `https://<domain>/<mount>`
-- API/docs: alleen vanaf `BH_API_ALLOW_IPS` of `ssh -L 8080:127.0.0.1:8080 ...` → `http://127.0.0.1:8080`
+- API/docs: `https://<domain>/api/...` met `Authorization: Bearer <BH_API_TOKEN>`
 
 ## Bare-metal (Debian/Ubuntu)
 

@@ -3,7 +3,7 @@
 # Usage:
 #   bash scripts/new-instance.sh --domain stream.example.com --email you@example.com
 #   bash scripts/new-instance.sh --domain stream.example.com --email you@example.com \
-#        --ssh-host 1.2.3.4 --allow-ip 5.6.7.8
+#        --ssh-host 1.2.3.4
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,7 +11,6 @@ DOMAIN=""
 EMAIL=""
 SSH_HOST=""
 SSH_USER="root"
-ALLOW_IP=""
 OUT=""
 
 rand() { openssl rand -hex 24; }
@@ -22,10 +21,13 @@ while [[ $# -gt 0 ]]; do
     --email) EMAIL="${2:?}"; shift 2 ;;
     --ssh-host) SSH_HOST="${2:?}"; shift 2 ;;
     --ssh-user) SSH_USER="${2:?}"; shift 2 ;;
-    --allow-ip) ALLOW_IP="${2:?}"; shift 2 ;;
+    --allow-ip)
+      echo "Warning: --allow-ip is obsolete (API uses bearer token only); ignoring" >&2
+      shift 2
+      ;;
     --out) OUT="${2:?}"; shift 2 ;;
     -h|--help)
-      sed -n '2,8p' "$0"
+      sed -n '2,7p' "$0"
       exit 0
       ;;
     *)
@@ -60,7 +62,6 @@ ICECAST_ADMIN_USER=admin
 ICECAST_ADMIN_PASSWORD=$(rand)
 
 BH_API_TOKEN=$(rand)
-BH_API_ALLOW_IPS=${ALLOW_IP}
 
 LETSENCRYPT_EMAIL=${EMAIL}
 
@@ -74,7 +75,4 @@ echo "Wrote $OUT"
 echo
 echo "Next:"
 echo "  1. Point DNS A/AAAA for ${DOMAIN} to the server"
-if [[ -n "$ALLOW_IP" ]]; then
-  echo "  2. (optional) edit BH_API_ALLOW_IPS in the env file"
-fi
-echo "  3. bash scripts/deploy-instance.sh --env $OUT"
+echo "  2. bash scripts/deploy-instance.sh --env $OUT"
