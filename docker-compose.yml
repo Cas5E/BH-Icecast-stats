@@ -1,0 +1,75 @@
+services:
+  icecast:
+    build: ./icecast
+    restart: unless-stopped
+    environment:
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD}
+      ICECAST_RELAY_PASSWORD: ${ICECAST_RELAY_PASSWORD}
+      ICECAST_ADMIN_USER: ${ICECAST_ADMIN_USER:-admin}
+      ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD}
+      ICECAST_HOSTNAME: ${BH_DOMAIN:-localhost}
+    expose:
+      - "8000"
+    networks:
+      - bh
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      BH_API_TOKEN: ${BH_API_TOKEN}
+      BH_DATABASE_URL: sqlite:////data/bh-icecast.db
+      BH_DATA_DIR: /data
+      BH_PUBLIC_LISTEN_BASE: ${BH_PUBLIC_LISTEN_BASE:-https://${BH_DOMAIN}}
+      ICECAST_ADMIN_URL: http://icecast:8000
+      ICECAST_ADMIN_USER: ${ICECAST_ADMIN_USER:-admin}
+      ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD}
+    volumes:
+      - api-data:/data
+    expose:
+      - "8080"
+    networks:
+      - bh
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  proxy:
+    build: ./nginx
+    restart: unless-stopped
+    depends_on:
+      - icecast
+      - api
+    environment:
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD}
+      BH_DOMAIN: ${BH_DOMAIN}
+      BH_API_ALLOW_IPS: ${BH_API_ALLOW_IPS:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      # Management API only on localhost (use SSH tunnel from your PC)
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - certbot-www:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:rw
+    networks:
+      - bh
+
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["ssl"]
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: certbot
+
+volumes:
+  api-data:
+  certbot-www:
+  certbot-certs:
+
+networks:
+  bh:
+    driver: bridge
