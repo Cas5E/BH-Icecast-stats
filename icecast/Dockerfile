@@ -18,6 +18,7 @@ RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d \
     && chmod 755 /var/log/icecast2
 
 COPY icecast.xml.template /etc/icecast2/icecast.xml.template
+COPY web/ /usr/share/icecast2/web/
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
