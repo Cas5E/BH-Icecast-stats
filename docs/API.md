@@ -32,6 +32,8 @@ The token lives in `/opt/bh-icecast/.env` on the server. Without it, API calls r
 | Source password | Password the encoder (OBS, butt, …) uses to publish |
 | Listen URL | Public HTTPS URL for listeners |
 | Instant apply | Create/update/delete does **not** reload Icecast; existing *other* listeners stay connected |
+| Luisterlog | Historische luistersessies per mount (IP, user-agent, duur) |
+| Snapshot | Periodieke listener-count voor grafieken |
 
 Mount names: `1–63` chars, start with a letter/digit, then `a-z A-Z 0-9 . _ -`. Leading `/` is optional; the API always stores `/name`.
 
@@ -190,6 +192,123 @@ curl -X DELETE https://icecast.ebbersbroadcast.technology/api/v1/mounts/studio-1
 
 ---
 
+## Statistics & luisterlog
+
+De API pollt Icecast admin (`BH_STATS_POLL_SECONDS`, default 15s) en schrijft:
+
+- **live listeners** (huidige clients per mount)
+- **luisterlog** (`listener_sessions`: connect/disconnect, IP, user-agent, duur)
+- **snapshots** (periodieke listener-counts voor grafieken)
+- **rollups** (peak listeners, totale sessies / luisterseconden)
+
+### `GET /api/v1/stats`
+
+Overzicht voor alle mounts.
+
+**Response `200`**
+```json
+{
+  "mounts": [
+    {
+      "mount_name": "/studio-1",
+      "title": "Studio 1",
+      "source_connected": true,
+      "listeners_current": 3,
+      "listeners_peak": 12,
+      "listeners_peak_at": "2026-08-05T20:00:00+00:00",
+      "bitrate": 128,
+      "total_sessions": 84,
+      "total_listen_seconds": 12540.0,
+      "total_listen_hours": 3.483,
+      "active_sessions": 3,
+      "live_listeners": [
+        {
+          "client_id": "42",
+          "ip": "203.0.113.10",
+          "user_agent": "VLC/3.0",
+          "connected_seconds": 120,
+          "connected_at": "2026-08-05T21:18:00+00:00"
+        }
+      ]
+    }
+  ],
+  "listeners_total": 3,
+  "sources_connected": 1
+}
+```
+
+---
+
+### `GET /api/v1/mounts/{mount_name}/stats`
+
+Zelfde payload als één item uit `/api/v1/stats` voor die mount.
+
+---
+
+### `GET /api/v1/mounts/{mount_name}/listeners`
+
+Alleen de actieve luisteraars (live).
+
+---
+
+### `GET /api/v1/mounts/{mount_name}/listener-log`
+
+Luisterlog met paginatie.
+
+| Query | Default | Meaning |
+|-------|---------|---------|
+| `limit` | 50 | max 500 |
+| `offset` | 0 | |
+| `active` | omitted | `true` = alleen online, `false` = alleen afgesloten |
+
+**Response `200`**
+```json
+{
+  "total": 84,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "id": 1,
+      "mount_name": "/studio-1",
+      "client_id": "42",
+      "ip": "203.0.113.10",
+      "user_agent": "VLC/3.0",
+      "connected_at": "2026-08-05T21:18:00+00:00",
+      "disconnected_at": null,
+      "duration_seconds": null,
+      "active": true
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/v1/mounts/{mount_name}/stats/history`
+
+Snapshots voor grafieken.
+
+| Query | Default | Meaning |
+|-------|---------|---------|
+| `hours` | 24 | terugkijken (max 90 dagen) |
+
+```json
+[
+  {
+    "recorded_at": "2026-08-05T20:00:00+00:00",
+    "listeners": 2,
+    "listener_peak": 5,
+    "bitrate": 128,
+    "source_connected": true
+  }
+]
+```
+
+Config (env): `BH_STATS_ENABLED`, `BH_STATS_POLL_SECONDS`, `BH_STATS_SNAPSHOT_SECONDS`, `BH_STATS_RETENTION_DAYS`.
+
+---
+
 ## Encoder settings (from create response)
 
 | Field | Use in OBS / butt / … |
@@ -225,3 +344,8 @@ Listeners: open `listen_url` on **HTTPS :443**. Encoding on 80/443 is blocked on
 | PATCH | `/api/v1/mounts/{name}` | yes |
 | POST | `/api/v1/mounts/{name}/rotate-password` | yes |
 | DELETE | `/api/v1/mounts/{name}` | yes |
+| GET | `/api/v1/stats` | yes |
+| GET | `/api/v1/mounts/{name}/stats` | yes |
+| GET | `/api/v1/mounts/{name}/listeners` | yes |
+| GET | `/api/v1/mounts/{name}/listener-log` | yes |
+| GET | `/api/v1/mounts/{name}/stats/history` | yes |

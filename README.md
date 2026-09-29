@@ -1,6 +1,8 @@
-# BH-Icecast
+# BH-Icecast-stats
 
-Modulaire Icecast-stack met HTTP-API voor mountpoints. Elk mountpoint heeft een **eigen source-wachtwoord**. Mounts aanmaken/wijzigen vereist **geen Icecast-reload**.
+Fork/uitbreiding van [BH-Icecast](https://github.com/Cas5E/BH-Icecast) met **per-mountpoint statistieken** en **luisterlog**.
+
+Modulaire Icecast-stack met HTTP-API voor mountpoints. Elk mountpoint heeft een **eigen source-wachtwoord**. Mounts aanmaken/wijzigen vereist **geen Icecast-reload**. De API pollt Icecast admin en houdt live listeners, peaks en sessiehistorie bij.
 
 Zelfde stack op **meerdere servers** met elk een eigen domein: zie [docs/DEPLOY.md](docs/DEPLOY.md).
 
@@ -79,6 +81,25 @@ Response (wachtwoord wordt één keer teruggegeven):
   "source_mount": "/live",
   "enabled": true
 }
+```
+
+### Statistieken & luisterlog
+
+```bash
+# overzicht alle mounts
+curl -H "Authorization: Bearer $BH_API_TOKEN" http://localhost:8080/api/v1/stats
+
+# stats + live listeners voor één mount
+curl -H "Authorization: Bearer $BH_API_TOKEN" \
+  http://localhost:8080/api/v1/mounts/live/stats
+
+# luisterlog (historische sessies)
+curl -H "Authorization: Bearer $BH_API_TOKEN" \
+  "http://localhost:8080/api/v1/mounts/live/listener-log?limit=50"
+
+# listener-historiek (snapshots, default 24u)
+curl -H "Authorization: Bearer $BH_API_TOKEN" \
+  "http://localhost:8080/api/v1/mounts/live/stats/history?hours=24"
 ```
 
 ### Overzicht / wijzigen / verwijderen

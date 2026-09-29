@@ -83,3 +83,62 @@ class MountCreated(MountOut):
 class HealthOut(BaseModel):
     status: str
     service: str
+
+
+class LiveListenerOut(BaseModel):
+    client_id: str
+    ip: str
+    user_agent: str | None
+    connected_seconds: int
+    connected_at: str
+
+
+class ListenerSessionOut(BaseModel):
+    id: int
+    mount_name: str
+    client_id: str
+    ip: str
+    user_agent: str | None
+    connected_at: str
+    disconnected_at: str | None
+    duration_seconds: int | None
+    active: bool
+
+
+class ListenerLogOut(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[ListenerSessionOut]
+
+
+class SnapshotOut(BaseModel):
+    recorded_at: str
+    listeners: int
+    listener_peak: int
+    bitrate: int | None
+    source_connected: bool
+
+
+class MountStatsOut(BaseModel):
+    mount_name: str
+    title: str | None = None
+    source_connected: bool
+    listeners_current: int
+    listeners_peak: int
+    listeners_peak_at: str | None
+    bitrate: int | None = None
+    genre: str | None = None
+    server_name: str | None = None
+    stream_start: str | None = None
+    total_sessions: int
+    total_listen_seconds: float
+    total_listen_hours: float
+    active_sessions: int
+    live_listeners: list[LiveListenerOut] = Field(default_factory=list)
+
+
+class StatsOverviewOut(BaseModel):
+    mounts: list[MountStatsOut]
+    listeners_total: int
+    sources_connected: int

@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
     public_listen_base: str = "http://localhost:8000"
     mount_name_max_length: int = 64
+    # Per-mount statistics / luisterlog
+    stats_enabled: bool = True
+    stats_poll_seconds: int = 15
+    stats_snapshot_seconds: int = 60
+    stats_retention_days: int = 90
 
 
 @lru_cache
